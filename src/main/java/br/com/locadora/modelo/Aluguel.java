@@ -1,9 +1,10 @@
 package br.com.locadora.modelo;
 
+import br.com.locadora.adicional.ComponenteAluguel;
 import br.com.locadora.tarifa.TarifaStrategy;
 import java.util.Objects;
 
-public class Aluguel {
+public class Aluguel implements ComponenteAluguel {
     private final Cliente cliente;
     private final Veiculo veiculo;
     private final int quantidadeDias;
@@ -25,6 +26,17 @@ public class Aluguel {
         return tarifaStrategy.calcular(veiculo.getValorDiaria(), quantidadeDias);
     }
 
+    /** Componente concreto do Decorator: sem adicionais, o total e o valor base. */
+    @Override
+    public double calcularTotal() {
+        return calcularValorBase();
+    }
+
+    @Override
+    public String getDescricao() {
+        return "Aluguel do " + veiculo.getModelo();
+    }
+
     public void setTarifaStrategy(TarifaStrategy tarifaStrategy) {
         this.tarifaStrategy = Objects.requireNonNull(tarifaStrategy, "A tarifa e obrigatoria.");
     }
@@ -37,6 +49,7 @@ public class Aluguel {
         return veiculo;
     }
 
+    @Override
     public int getQuantidadeDias() {
         return quantidadeDias;
     }

@@ -1,6 +1,6 @@
-﻿# Locadora de Veiculos — Parte 1 (implementacao parcial)
+﻿# Locadora de Veiculos — Parte 1
 
-Trabalho academico de Padroes de Projeto em Java. Esta entrega corresponde apenas a metade da Parte 1 dedicada as entidades e ao Strategy. Aplicacao de console, sem banco de dados, Spring ou APIs. Decorator e integracao final ficam para a outra integrante; a Parte 2 nao esta implementada.
+Trabalho academico de Padroes de Projeto em Java. Aplicacao de console, sem banco de dados, Spring ou APIs, que aplica dois padroes de projeto: **Strategy** (regra de calculo da tarifa) e **Decorator** (servicos adicionais do aluguel). A Parte 2 nao esta implementada.
 
 ## Pre-requisitos
 
@@ -25,14 +25,30 @@ No Linux/macOS, use `./mvnw clean test` e `./mvnw package`, seguidos do mesmo co
 
 Mantenha `mvnw`, `mvnw.cmd` e `.mvn/wrapper/maven-wrapper.properties` no Git. O Wrapper oficial usa o modo `only-script`, que nao precisa de `maven-wrapper.jar`. A pasta `target/` e gerada durante a compilacao e permanece ignorada pelo Git.
 
-Saida da demonstracao provisoria:
+## Menu do console
+
+Ao executar o JAR, o menu oferece:
+
+1. Listar veiculos disponiveis.
+2. Cadastrar cliente.
+3. Realizar aluguel: escolher cliente, veiculo e quantidade de dias, selecionar a tarifa (padrao ou longa duracao), escolher os adicionais (GPS, seguro, os dois ou nenhum) e ver o resumo com o valor total.
+0. Sair.
+
+O sistema ja vem com quatro veiculos cadastrados (um deles indisponivel, para demonstrar o filtro). Ao concluir um aluguel, o veiculo escolhido passa a ficar indisponivel. Entradas invalidas (texto, numeros fora da faixa, nome vazio) sao reperguntadas.
+
+Exemplo de resumo (Fiat Argo, 7 dias, tarifa longa duracao, GPS e seguro):
 
 ```text
+===== RESUMO DO ALUGUEL =====
 Cliente: Ana
 Veiculo: Fiat Argo
 Dias: 7
-Tarifa padrao: R$ 700,00
-Tarifa longa duracao: R$ 595,00
+Tarifa: Longa duracao
+Valor base: R$ 595,00
+GPS (7 x R$ 20,00): R$ 140,00
+Seguro adicional (7 x R$ 30,00): R$ 210,00
+Descricao: Aluguel do Fiat Argo + GPS + Seguro adicional
+VALOR TOTAL: R$ 945,00
 ```
 
 ## Organizacao
@@ -40,16 +56,18 @@ Tarifa longa duracao: R$ 595,00
 - `pom.xml`: Java 17, JUnit 5 e plugins de compilacao, testes e JAR executavel.
 - `mvnw`, `mvnw.cmd` e `.mvn/wrapper/`: Maven Wrapper para executar sem Maven instalado.
 - `src/main/java/br/com/locadora/modelo/`: Cliente, Veiculo e Aluguel.
-- `src/main/java/br/com/locadora/tarifa/`: TarifaStrategy, TarifaPadrao e TarifaLongaDuracao.
-- `src/main/java/br/com/locadora/Main.java`: exemplo sem menu definitivo.
-- `src/test/java/br/com/locadora/`: testes das tarifas, validacoes e troca de estrategia.
+- `src/main/java/br/com/locadora/tarifa/`: TarifaStrategy, TarifaPadrao e TarifaLongaDuracao (Strategy).
+- `src/main/java/br/com/locadora/adicional/`: ComponenteAluguel, AdicionalDecorator, GpsDecorator e SeguroAdicionalDecorator (Decorator).
+- `src/main/java/br/com/locadora/console/MenuLocadora.java`: menu interativo do console.
+- `src/main/java/br/com/locadora/Main.java`: ponto de entrada, apenas inicia o menu.
+- `src/test/java/br/com/locadora/`: testes das tarifas, do aluguel, dos adicionais (incluindo a combinacao com o Strategy) e do fluxo do menu.
 - `.gitignore`: exclui resultados de compilacao e arquivos locais de ferramentas.
 
 ## Strategy
 
 `TarifaStrategy` define `calcular(double valorDiaria, int quantidadeDias)`. `TarifaPadrao` multiplica diaria por dias. `TarifaLongaDuracao` aplica 15% de desconto a partir de 7 dias, inclusive; abaixo disso, cobra o valor normal.
 
-`Aluguel` e o contexto: recebe a interface no construtor, delega o calculo a ela e permite mudar a regra usando `setTarifaStrategy`. Nao depende das classes concretas. O Main demonstra a troca no mesmo aluguel.
+`Aluguel` e o contexto: recebe a interface no construtor, delega o calculo a ela e permite mudar a regra usando `setTarifaStrategy`. Nao depende das classes concretas. O teste `AluguelTest` demonstra a troca no mesmo aluguel.
 
 Com diaria de R$ 100,00:
 
@@ -62,28 +80,57 @@ Com diaria de R$ 100,00:
 
 Dias devem ser maiores que zero. A diaria pode ser zero, mas nao negativa, NaN ou infinita. As entidades e as estrategias validam suas entradas; cliente, veiculo e estrategia do aluguel nao podem ser nulos. O calculo usa double conforme a interface solicitada; a exibicao usa duas casas decimais, sem arredondamento intermediario.
 
-## Preparacao para Decorator e pendencias
+## Decorator
 
-`Aluguel.calcularValorBase()` e publico e retorna o total da estrategia escolhida, sem adicionais. `getQuantidadeDias()` fornece a duracao para calcular adicionais diarios. Esses metodos ficam disponiveis para a futura composicao. Nenhuma interface ou classe de Decorator foi antecipada.
+O Decorator permite acrescentar servicos extras ao aluguel sem alterar a classe `Aluguel` nem criar uma subclasse para cada combinacao (com GPS, com seguro, com os dois...).
 
-Responsabilidades da colega nesta Parte 1:
+- `ComponenteAluguel` (componente): interface com `calcularTotal()`, `getDescricao()` e `getQuantidadeDias()`.
+- `Aluguel` (componente concreto): implementa a interface; sem adicionais, o total e o valor base calculado pelo Strategy.
+- `AdicionalDecorator` (decorator abstrato): guarda o componente envolvido e soma ao total dele `valor diario do adicional x dias`. Tambem acrescenta o nome do adicional a descricao.
+- `GpsDecorator`: R$ 20,00 por dia.
+- `SeguroAdicionalDecorator`: R$ 30,00 por dia.
 
-- Implementar Decorator para GPS (R$ 20 por dia) e seguro adicional (R$ 30 por dia).
-- Compor os adicionais com o calculo base e testar cada adicional e suas combinacoes.
-- Fazer a integracao final e atualizar a demonstracao e a documentacao.
+Como cada decorator tambem e um `ComponenteAluguel`, eles podem ser empilhados livremente:
 
-Exemplo esperado para futura integracao: 7 dias com tarifa longa duracao tem base de R$ 595,00; GPS acrescenta R$ 140,00 e seguro R$ 210,00, totalizando R$ 945,00 com ambos. Esse calculo combinado ainda nao esta implementado.
+```java
+ComponenteAluguel aluguel = new Aluguel(cliente, veiculo, 7, new TarifaLongaDuracao());
+aluguel = new GpsDecorator(aluguel);              // + R$ 140,00
+aluguel = new SeguroAdicionalDecorator(aluguel);  // + R$ 210,00
+aluguel.calcularTotal();                          // R$ 945,00
+```
 
-A disponibilidade e um atributo do veiculo; esta demonstracao de tarifas nao implementa fluxo de reserva ou devolucao. Nao ha servicos extras, classes vazias ou outros padroes de projeto implementados.
+No menu, cada adicional escolhido envolve o componente anterior; se nenhum for escolhido, o proprio `Aluguel` e usado. A ordem dos decorators nao altera o total.
+
+### Combinacao Strategy + Decorator
+
+O Strategy calcula apenas o valor da diaria do veiculo; os adicionais sao somados depois, por isso o desconto de longa duracao **nao** incide sobre GPS e seguro. Como o decorator chama o componente a cada calculo, trocar a estrategia do `Aluguel` com `setTarifaStrategy` reflete imediatamente no total decorado.
+
+Com diaria de R$ 100,00 e os dois adicionais (R$ 50,00 por dia):
+
+| Dias | Padrao | Longa duracao |
+| --- | --- | --- |
+| 1 | R$ 150,00 | R$ 150,00 |
+| 6 | R$ 900,00 | R$ 900,00 |
+| 7 | R$ 1.050,00 | R$ 945,00 |
+| 8 | R$ 1.200,00 | R$ 1.080,00 |
+
+## Testes
+
+- `TarifasTest`: calculo das duas tarifas, limite de 7 dias e validacoes.
+- `AluguelTest`: troca de estrategia, delegacao e validacoes do aluguel.
+- `DecoratorTest`: total sem adicionais, com GPS, com seguro, com os dois, ordem dos decorators, combinacao com cada tarifa, troca de estrategia apos decorar, descricao e componente nulo.
+- `MenuLocadoraTest`: simula a digitacao no menu e confere o resumo (com e sem adicionais), a indisponibilidade do veiculo alugado e o tratamento de entradas invalidas.
 
 ## Contribuicoes
 
-- Integrante 1 — [preencher nome]: estrutura Maven, entidades, Strategy, Main provisorio, testes e README inicial.
-- Integrante 2 — [preencher nome]: Decorator, testes dos adicionais e integracao final (pendentes).
+Responsaveis: Isabel Bastos, Elias Maciel e Sophia dos Santos.
+
+- Isabel Bastos: estrutura Maven, entidades, Strategy, Main provisorio, testes das tarifas e do aluguel e README inicial.
+- Elias Maciel: [preencher contribuicao].
+- Sophia dos Santos: Decorator (GPS e seguro adicional), menu do console, integracao final, testes do Decorator e do menu e finalizacao do README.
 
 ## Uso de inteligencia artificial
 
-Foi utilizado OpenAI Codex como apoio a implementacao do codigo, testes e documentacao desta metade da Parte 1.
-
-- Modelo exato: [preencher].
-- Revisao, compreensao e validacao academica pelas integrantes: [preencher apos revisao].
+- Isabel Bastos: foi utilizado OpenAI Codex como apoio a implementacao do codigo, testes e documentacao das entidades e do Strategy. Modelo exato: [preencher].
+- Sophia dos Santos: foi utilizado Claude Code (Anthropic), modelo Claude Opus 5.5, como apoio a implementacao do Decorator, do menu, dos testes correspondentes e desta documentacao.
+- Revisao, compreensao e validacao academica pelos responsaveis: [preencher apos revisao].
