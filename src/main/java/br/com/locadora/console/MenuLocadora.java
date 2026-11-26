@@ -4,16 +4,22 @@ import br.com.locadora.adicional.AdicionalDecorator;
 import br.com.locadora.adicional.ComponenteAluguel;
 import br.com.locadora.adicional.GpsDecorator;
 import br.com.locadora.adicional.SeguroAdicionalDecorator;
+import br.com.locadora.adicional.TaxaAeroportoDecorator;
+import br.com.locadora.adicional.TaxaDecorator;
+import br.com.locadora.adicional.TaxaLimpezaDecorator;
 import br.com.locadora.modelo.Aluguel;
 import br.com.locadora.modelo.Cliente;
 import br.com.locadora.modelo.Veiculo;
+import br.com.locadora.tarifa.TarifaFidelidade;
 import br.com.locadora.tarifa.TarifaLongaDuracao;
 import br.com.locadora.tarifa.TarifaPadrao;
 import br.com.locadora.tarifa.TarifaStrategy;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
@@ -29,6 +35,30 @@ public class MenuLocadora {
     private final List<Veiculo> veiculos = new ArrayList<>();
     private final List<Cliente> clientes = new ArrayList<>();
     private long proximoIdCliente = 1;
+    private final List<RegistroAluguel> alugueis = new ArrayList<>();
+    private final Map<Long, Integer> alugueisPorCliente = new HashMap<>();
+
+    private static final class RegistroAluguel {
+        private final Aluguel aluguel;
+        private final String nomeTarifa;
+        private ComponenteAluguel componente;
+        private final List<TaxaDecorator> taxas = new ArrayList<>();
+
+        private RegistroAluguel(Aluguel aluguel, String nomeTarifa, ComponenteAluguel componente) {
+            this.aluguel = aluguel;
+            this.nomeTarifa = nomeTarifa;
+            this.componente = componente;
+        }
+
+        private boolean possui(Class<? extends TaxaDecorator> tipo) {
+            return taxas.stream().anyMatch(tipo::isInstance);
+        }
+
+        private void aplicar(TaxaDecorator taxa) {
+            taxas.add(taxa);
+            componente = taxa;
+        }
+    }
 
     public MenuLocadora(Scanner entrada, PrintStream saida) {
         this.entrada = entrada;
@@ -47,12 +77,14 @@ public class MenuLocadora {
                 saida.println("1 - Listar veiculos disponiveis");
                 saida.println("2 - Cadastrar cliente");
                 saida.println("3 - Realizar aluguel");
+                saida.println("4 - Contratar servicos extras para um aluguel");
                 saida.println("0 - Sair");
-                int opcao = lerInteiro("Escolha uma opcao: ", 0, 3);
+                int opcao = lerInteiro("Escolha uma opcao: ", 0, 4);
                 switch (opcao) {
                     case 1 -> listarVeiculosDisponiveis();
                     case 2 -> cadastrarCliente();
                     case 3 -> realizarAluguel();
+                    case 4 -> contratarServicosExtras();
                     default -> {
                         saida.println("Ate logo!");
                         return;
@@ -113,9 +145,26 @@ public class MenuLocadora {
         saida.println("--- Tarifas ---");
         saida.println("1 - Padrao (diaria x dias)");
         saida.println("2 - Longa duracao (15% de desconto a partir de 7 dias)");
-        int opcaoTarifa = lerInteiro("Escolha a tarifa: ", 1, 2);
-        TarifaStrategy tarifa = opcaoTarifa == 1 ? new TarifaPadrao() : new TarifaLongaDuracao();
-        String nomeTarifa = opcaoTarifa == 1 ? "Padrao" : "Longa duracao";
+        saida.println("3 - Fidelidade (5% de desconto por aluguel anterior do cliente, ate 20%)");
+        int opcaoTarifa = lerInteiro("Escolha a tarifa: ", 1, 3);
+        TarifaStrategy tarifa;
+        String nomeTarifa;
+        switch (opcaoTarifa) {
+            case 1 -> {
+                tarifa = new TarifaPadrao();
+                nomeTarifa = "Padrao";
+            }
+            case 2 -> {
+                tarifa = new TarifaLongaDuracao();
+                nomeTarifa = "Longa duracao";
+            }
+            default -> {
+                TarifaFidelidade fidelidade = new TarifaFidelidade(alugueisPorCliente.getOrDefault(cliente.getId(), 0));
+                tarifa = fidelidade;
+                nomeTarifa = String.format(PT_BR, "Fidelidade (%d alugueis anteriores, %.0f%% de desconto)",
+                        fidelidade.getAlugueisAnteriores(), fidelidade.getPercentualDesconto() * 100);
+            }
+        }
 
         Aluguel aluguel = new Aluguel(cliente, veiculo, dias, tarifa);
 
@@ -136,6 +185,58 @@ public class MenuLocadora {
 
         veiculo.setDisponibilidade(false);
         mostrarResumo(aluguel, nomeTarifa, adicionais, componente);
+
+        alugueis.add(new RegistroAluguel(aluguel, nomeTarifa, componente));
+        alugueisPorCliente.merge(cliente.getId(), 1, Integer::sum);
+        saida.println("Aluguel registrado com codigo " + alugueis.size() + ".");
+    }
+
+
+    private void contratarServicosExtras() {
+        if (alugueis.isEmpty()) {
+            saida.println("Nenhum aluguel realizado ainda (opcao 3).");
+            return;
+        }
+        saida.println("--- Alugueis realizados ---");
+        for (int i = 0; i < alugueis.size(); i++) {
+            RegistroAluguel r = alugueis.get(i);
+            saida.printf(PT_BR, "%d - %s | %s | %d dias | total: R$ %.2f%n", i + 1, r.aluguel.getCliente().getNome(),
+                    r.aluguel.getVeiculo().getModelo(), r.aluguel.getQuantidadeDias(), r.componente.calcularTotal());
+        }
+        RegistroAluguel registro = alugueis.get(lerInteiro("Codigo do aluguel: ", 1, alugueis.size()) - 1);
+
+        boolean temLimpeza = registro.possui(TaxaLimpezaDecorator.class);
+        boolean temAeroporto = registro.possui(TaxaAeroportoDecorator.class);
+        if (temLimpeza && temAeroporto) {
+            saida.println("Todos os servicos extras ja foram contratados para este aluguel.");
+            return;
+        }
+        if (!temLimpeza && lerSimNao(String.format(PT_BR, "Adicionar taxa de limpeza (R$ %.2f, valor unico)? (s/n): ",
+                TaxaLimpezaDecorator.VALOR_FIXO))) {
+            registro.aplicar(new TaxaLimpezaDecorator(registro.componente));
+        }
+        if (!temAeroporto && lerSimNao(String.format(PT_BR, "Retirada no aeroporto (%.0f%% sobre o total)? (s/n): ",
+                TaxaAeroportoDecorator.PERCENTUAL * 100))) {
+            registro.aplicar(new TaxaAeroportoDecorator(registro.componente));
+        }
+        mostrarResumoServicos(registro);
+    }
+
+    private void mostrarResumoServicos(RegistroAluguel registro) {
+        saida.println();
+        saida.println("===== SERVICOS EXTRAS =====");
+        saida.println("Cliente: " + registro.aluguel.getCliente().getNome());
+        saida.println("Veiculo: " + registro.aluguel.getVeiculo().getModelo());
+        saida.println("Tarifa: " + registro.nomeTarifa);
+        if (registro.taxas.isEmpty()) {
+            saida.println("Servicos extras: nenhum");
+        } else {
+            for (TaxaDecorator t : registro.taxas) {
+                saida.printf(PT_BR, "%s (%s): R$ %.2f%n", t.getNome(), t.getRegraCobranca(), t.calcularValorTaxa());
+            }
+        }
+        saida.println("Descricao: " + registro.componente.getDescricao());
+        saida.printf(PT_BR, "VALOR TOTAL: R$ %.2f%n", registro.componente.calcularTotal());
     }
 
     private Cliente escolherCliente() {
