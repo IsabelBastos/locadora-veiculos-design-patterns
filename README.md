@@ -126,11 +126,11 @@ Com diaria de R$ 100,00 e os dois adicionais (R$ 50,00 por dia):
 Responsaveis: Isabel Bastos, Elias Maciel e Sophia dos Santos.
 
 - Isabel Bastos: estrutura Maven, entidades, Strategy, Main provisorio, testes das tarifas e do aluguel e README inicial.
-- Elias Maciel: Elias Maciel: revisao geral do projeto e da documentacao.
+- Elias Maciel: revisao geral do projeto e da documentacao.
 - Sophia dos Santos: Decorator (GPS e seguro adicional), menu do console, integracao final, testes do Decorator e do menu e finalizacao do README.
 
 ## Uso de inteligencia artificial
 
 - Isabel Bastos: foi utilizado OpenAI Codex como apoio a implementacao do codigo, testes e documentacao das entidades e do Strategy. Modelo exato: [preencher].
 - Sophia dos Santos: foi utilizado Claude Code (Anthropic), modelo Claude Opus 5.5, como apoio a implementacao do Decorator, do menu, dos testes correspondentes e desta documentacao.
-- Revisao, compreensao e validacao academica pelos responsaveis: [preencher apos revisao].
+- Revisao, compreensao e validacao academica pelos responsaveis: Elias Maciel.
