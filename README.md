@@ -126,7 +126,7 @@ Com diaria de R$ 100,00 e os dois adicionais (R$ 50,00 por dia):
 Responsaveis: Isabel Bastos, Elias Maciel e Sophia dos Santos.
 
 - Isabel Bastos: estrutura Maven, entidades, Strategy, Main provisorio, testes das tarifas e do aluguel e README inicial.
-- Elias Maciel: [preencher contribuicao].
+- Elias Maciel: Elias Maciel: revisao geral do projeto e da documentacao.
 - Sophia dos Santos: Decorator (GPS e seguro adicional), menu do console, integracao final, testes do Decorator e do menu e finalizacao do README.
 
 ## Uso de inteligencia artificial
