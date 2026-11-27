@@ -133,4 +133,3 @@ Responsaveis: Isabel Bastos, Elias Maciel e Sophia dos Santos.
 
 - Isabel Bastos: foi utilizado OpenAI Codex como apoio a implementacao do codigo, testes e documentacao das entidades e do Strategy. Modelo exato: [preencher].
 - Sophia dos Santos: foi utilizado Claude Code (Anthropic), modelo Claude Opus 5.5, como apoio a implementacao do Decorator, do menu, dos testes correspondentes e desta documentacao.
-- Revisao, compreensao e validacao academica pelos responsaveis: Elias Maciel.
