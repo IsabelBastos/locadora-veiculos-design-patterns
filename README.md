@@ -1,6 +1,6 @@
 ﻿# Locadora de Veiculos — Parte 1
 
-Trabalho academico de Padroes de Projeto em Java. Aplicacao de console, sem banco de dados, Spring ou APIs, que aplica dois padroes de projeto: **Strategy** (regra de calculo da tarifa) e **Decorator** (servicos adicionais do aluguel). A Parte 2 nao esta implementada.
+Trabalho academico de Padroes de Projeto em Java. Aplicacao de console, sem banco de dados, Spring ou APIs, que aplica dois padroes de projeto: **Strategy** (regra de calculo da tarifa) e **Decorator** (servicos adicionais do aluguel). A Parte 2 foi implementada pela equipe Estacionamento; veja a secao ao final deste documento.
 
 ## Pre-requisitos
 
@@ -217,4 +217,11 @@ Testes automatizados da extensao (o build passa a executar 71 testes):
 
 ## Contribuicoes da extensao
 
-- [preencher integrante]: [preencher contribuicao].
+- Lucas Magenis: `TarifaFidelidade` (Strategy), `TaxaDecorator`, `TaxaLimpezaDecorator`, `TaxaAeroportoDecorator` e testes.
+- Octavio Demos: integracao no menu (tarifa 3, opcao 4 e `RegistroAluguel`) e `MenuExtensaoTest`.
+- Ana Laura Vicenzi: documentacao da extensao no README.
+- Bruno Supriano: revisao final do README, das contribuicoes e abertura do Pull Request.
+
+## Uso de inteligencia artificial na Parte 2
+
+A equipe utilizou OpenAI Codex e Claude (Anthropic) como apoio ao codigo da extensao, aos testes e a documentacao. Os commits, a revisao do codigo e a execucao dos testes foram realizados e validados pelos integrantes.
